@@ -28,10 +28,21 @@ void ASteeringAgent::Tick(float DeltaTime)
 
 	if (SteeringBehavior)
 	{
-		SteeringOutput output = SteeringBehavior->CalculateSteering(DeltaTime, *this);
-		AddMovementInput(FVector{output.LinearVelocity, 0.f});
-		// TODO: Implement angular velocity handling
-     	}
+		SteeringOutput Output = SteeringBehavior->CalculateSteering(DeltaTime, *this);
+		//check if Output isn't empty but valid
+		if (Output.IsValid)
+		{
+			//linear
+			AddMovementInput(FVector{Output.LinearVelocity, 0.f});
+
+			//angular
+			if (!FMath::IsNearlyZero(Output.AngularVelocity))
+			{
+				const float DeltaYawDegrees = Output.AngularVelocity * DeltaTime;
+				AddActorWorldRotation(FRotator(0.f, DeltaYawDegrees, 0.f));
+			}
+		}
+	}
 }
 
 // Called to bind functionality to input
@@ -44,4 +55,3 @@ void ASteeringAgent::SetSteeringBehavior(ISteeringBehavior* NewSteeringBehavior)
 {
 	SteeringBehavior = NewSteeringBehavior;
 }
-

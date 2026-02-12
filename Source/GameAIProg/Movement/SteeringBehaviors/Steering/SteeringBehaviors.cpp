@@ -7,15 +7,15 @@
 //*******
 void ISteeringBehavior::DebugLines(ASteeringAgent& Agent, FVector2D& LinearVelocity)
 {
-	FVector Target3D{Target.Position, 0.0f};
-	FVector Agent3D{Agent.GetPosition(), 0.0f};
+	const FVector Target3D{Target.Position, 0.0f};
+	const FVector Agent3D{Agent.GetPosition(), 0.0f};
 
 	constexpr float LineLength = 300.f;
 	const FVector Velocity3D{LinearVelocity, 0.0f};
 	
-	FVector ToEnd = Velocity3D;
-	FVector Dir = ToEnd.GetSafeNormal();
-	FVector FixedEnd = Agent3D + Dir * LineLength;
+	const FVector ToEnd = Velocity3D;
+	const FVector Dir = ToEnd.GetSafeNormal();
+	const FVector FixedEnd = Agent3D + Dir * LineLength;
 	DrawDebugLine(Agent.GetWorld(), Agent3D, FixedEnd, FColor::Green);
 
 	const float AgentDegrees{Agent.GetRotation()};
@@ -46,8 +46,10 @@ SteeringOutput Seek::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 
 SteeringOutput Flee::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 {
-	SteeringOutput Steering{Seek::CalculateSteering(DeltaT, Agent)};
-	Steering.LinearVelocity *= -1;
+	SteeringOutput Steering{};
+
+	Steering.LinearVelocity = Target.Position - Agent.GetPosition();
+	Steering.LinearVelocity	*= -1;
 
 	DebugLines(Agent, Steering.LinearVelocity);
 
