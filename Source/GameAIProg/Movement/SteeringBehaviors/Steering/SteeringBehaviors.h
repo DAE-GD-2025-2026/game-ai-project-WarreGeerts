@@ -37,8 +37,19 @@ public:
 	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent& Agent) override;
 };
 
-class Flee : public Seek
+class Flee : public ISteeringBehavior
 {
 public:
 	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent& Agent) override;
 };
+
+class Arrive : public Seek
+{
+public:
+	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent& Agent) override;
+	
+private:
+	float MaxSpeed{};
+	bool MaxSpeedSet{false};
+};
+
