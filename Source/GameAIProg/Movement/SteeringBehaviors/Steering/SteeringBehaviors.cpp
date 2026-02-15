@@ -33,13 +33,19 @@ void ISteeringBehavior::SetMaxSpeed(const ASteeringAgent& Agent)
 
 //DEFAULT CLASS
 //*******
-void ISteeringBehavior::DebugLines(ASteeringAgent& Agent, FVector2D& LinearVelocity)
+void ISteeringBehavior::DebugLines(ASteeringAgent& Agent, FVector2D& LinearVelocity, FVector2D Target)
 {
 	const FVector Agent3D{Agent.GetPosition(), 0.0f};
 	const FVector Velocity3D{LinearVelocity, 0.0f};
 
+	FVector2D _Target;
+	if (Target.IsNearlyZero())
+		_Target = m_Target.Position;
+	else
+		_Target = Target;
+	
 	//--point to end
-	const FVector ToTarget{FVector(m_Target.Position, 0.0f) - Agent3D};
+	const FVector ToTarget{FVector(_Target, 0.0f) - Agent3D};
 	const FVector Dir{ToTarget.GetSafeNormal()};
 	constexpr float LineLength{200.f};
 	const FVector FixedEnd{Agent3D + Dir * LineLength};
@@ -64,7 +70,7 @@ void ISteeringBehavior::DebugLines(ASteeringAgent& Agent, FVector2D& LinearVeloc
 	DrawDebugLine(Agent.GetWorld(), Agent3D, VelEnd, FColor::Magenta);
 
 	//--target point
-	DrawDebugCircle(Agent.GetWorld(), FVector(m_Target.Position, 0.0f), 20, 10, FColor::Red,
+	DrawDebugCircle(Agent.GetWorld(), FVector(_Target, 0.0f), 20, 10, FColor::Red,
 	                false, -1, 0, 0, FVector(1, 0, 0),
 	                FVector(0, 1, 0));
 }
@@ -251,4 +257,49 @@ SteeringOutput Evade::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 	return Steering;
 }
 
+SteeringOutput Wander::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
+{
+	SteeringOutput Steering{};
 
+	const FVector AgentForward{
+		FMath::Cos(Agent.GetRotation() * PI / 180.f), FMath::Sin(Agent.GetRotation() * PI / 180.f), 0.f
+	};
+
+	FVector2D CircleCenter{AgentForward * m_OffsetDistance * 25};
+
+	//Calc end point depending on rotation of Agent
+	const FVector CirclePos{FVector(Agent.GetPosition(), 0.0f) + AgentForward * m_OffsetDistance * 25.f};
+	//Draw Circle visualizer
+	DrawDebugCircle(Agent.GetWorld(), CirclePos, m_Radius * 25, 20, FColor::Blue,
+	                false, -1, 0, 0, FVector(1, 0, 0),
+	                FVector(0, 1, 0));
+
+	//Get displacement force
+	FVector2D Displacement{0, -1};
+	Displacement *= m_Radius * 25;
+	//Randomly change it so it's not the same every time
+	m_WanderAngle += FMath::FRandRange(-m_MaxAngleChange, m_MaxAngleChange);
+	//Change current angle
+	float Length{static_cast<float>(Displacement.Size())};
+	Displacement.X = Length * FMath::Cos(m_WanderAngle);
+	Displacement.Y = Length * FMath::Sin(m_WanderAngle);
+	//Get wander force
+	FVector2D WanderForce{CircleCenter + Displacement};
+
+	//Seek
+	FVector2D CurrentVelocity{Agent.GetVelocity()};
+	FVector2D DesiredVelocity{WanderForce.GetSafeNormal() * Agent.GetMaxLinearSpeed()};
+	FVector2D SteeringForce{DesiredVelocity - CurrentVelocity};
+
+	constexpr float MaxForce{100};
+	SteeringForce = SteeringForce.GetClampedToMaxSize(MaxForce);
+	SteeringForce /= Agent.GetMass();
+
+	FVector2D NewVelocity{CurrentVelocity + SteeringForce};
+	NewVelocity = NewVelocity.GetClampedToMaxSize(Agent.GetMaxLinearSpeed());
+
+	Steering.LinearVelocity = NewVelocity;
+
+	DebugLines(Agent, Steering.LinearVelocity, WanderForce + Agent.GetPosition());
+	return Steering;
+}

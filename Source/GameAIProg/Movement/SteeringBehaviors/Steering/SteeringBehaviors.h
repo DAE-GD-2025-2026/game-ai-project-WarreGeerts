@@ -16,7 +16,7 @@ public:
 	// Override to implement your own behavior
 	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent& Agent);
 
-	virtual void DebugLines(ASteeringAgent& Agent, FVector2D& LinearVelocity) final; //display debug lines
+	virtual void DebugLines(ASteeringAgent& Agent, FVector2D& LinearVelocity, FVector2D Target = FVector2D::Zero()) final; //display debug lines
 	static void SetMaxSpeed(const ASteeringAgent& Agent); //Static to make sure it's for all instances of this class
 
 	void SetTarget(const FTargetData& NewTarget) { m_Target = NewTarget; }
@@ -116,6 +116,7 @@ public:
 protected:
 	float m_OffsetDistance{6.f};
 	float m_Radius{4.f};
-	float m_MaxAngleChange{45 / 180 * PI};
+	float m_MaxAngleChange{45.f / 180.f * PI};
 	float m_WanderAngle{0.f};
 };
+  
