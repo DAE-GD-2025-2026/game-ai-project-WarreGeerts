@@ -43,7 +43,7 @@ void ISteeringBehavior::DebugLines(ASteeringAgent& Agent, FVector2D& LinearVeloc
 	const FVector Dir{ToTarget.GetSafeNormal()};
 	constexpr float LineLength{200.f};
 	const FVector FixedEnd{Agent3D + Dir * LineLength};
-
+	
 	DrawDebugLine(Agent.GetWorld(), Agent3D, FixedEnd, FColor::Green);
 
 	//--Linear velocity facing out from front of Agent
@@ -70,23 +70,32 @@ void ISteeringBehavior::DebugLines(ASteeringAgent& Agent, FVector2D& LinearVeloc
 }
 
 
-// TODO: Do the Week01 assignment :^)
+//TODO: Do the Week01 assignment :^)
 //SEEK
 //*******
 SteeringOutput Seek::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 {
 	ISteeringBehavior::CalculateSteering(DeltaT, Agent);
-
 	SteeringOutput Steering{};
 
-	Steering.LinearVelocity = Target.Position - Agent.GetPosition();
+	FVector2D CurrentVelocity{Agent.GetVelocity()};
 
-	
-	
-	
-	
+	FVector2D ToTarget{Target.Position - Agent.GetPosition()};
+	FVector2D DesiredVelocity{ToTarget.GetSafeNormal() * Agent.GetMaxLinearSpeed()};
+
+	FVector2D SteeringForce{DesiredVelocity - CurrentVelocity};
+	constexpr float MaxForce{100};
+	SteeringForce = SteeringForce.GetClampedToMaxSize(MaxForce);
+
+	SteeringForce /= Agent.GetMass();
+
+	FVector2D NewVelocity{CurrentVelocity + SteeringForce};
+	NewVelocity = NewVelocity.GetClampedToMaxSize(Agent.GetMaxLinearSpeed());
+
+	Steering.LinearVelocity = NewVelocity;
+
+
 	DebugLines(Agent, Steering.LinearVelocity);
-
 	return Steering;
 }
 
@@ -95,14 +104,26 @@ SteeringOutput Seek::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 SteeringOutput Flee::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 {
 	ISteeringBehavior::CalculateSteering(DeltaT, Agent);
-
 	SteeringOutput Steering{};
 
-	Steering.LinearVelocity = Target.Position - Agent.GetPosition();
-	Steering.LinearVelocity *= -1;
+	FVector2D CurrentVelocity{Agent.GetVelocity()};
+
+	FVector2D ToTarget{Agent.GetPosition() - Target.Position};
+	FVector2D DesiredVelocity{ToTarget.GetSafeNormal() * Agent.GetMaxLinearSpeed()};
+
+	FVector2D SteeringForce{DesiredVelocity - CurrentVelocity};
+	constexpr float MaxForce{100};
+	SteeringForce = SteeringForce.GetClampedToMaxSize(MaxForce);
+
+	SteeringForce /= Agent.GetMass();
+
+	FVector2D NewVelocity{CurrentVelocity + SteeringForce};
+	NewVelocity = NewVelocity.GetClampedToMaxSize(Agent.GetMaxLinearSpeed());
+
+	Steering.LinearVelocity = NewVelocity;
+
 
 	DebugLines(Agent, Steering.LinearVelocity);
-
 	return Steering;
 }
 
