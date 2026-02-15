@@ -19,7 +19,7 @@ public:
 	virtual void DebugLines(ASteeringAgent& Agent, FVector2D& LinearVelocity) final; //display debug lines
 	static void SetMaxSpeed(const ASteeringAgent& Agent); //Static to make sure it's for all instances of this class
 
-	void SetTarget(const FTargetData& NewTarget) { Target = NewTarget; }
+	void SetTarget(const FTargetData& NewTarget) { m_Target = NewTarget; }
 
 	template <class T, std::enable_if_t<std::is_base_of_v<ISteeringBehavior, T>>* = nullptr>
 	T* As()
@@ -28,12 +28,12 @@ public:
 	}
 
 protected:
-	static float MaxSpeed; //static to make sure it's global for all instances
-	FTargetData Target;
+	static float m_MaxSpeed; //static to make sure it's global for all instances
+	FTargetData m_Target;
 
 private:
-	static bool MaxSpeedSet; //static to make sure it doesn't get reset when a new instance is made
-	bool MaxSpeedReset{false};
+	static bool sm_MaxSpeedSet; //static to make sure it doesn't get reset when a new instance is made
+	bool m_MaxSpeedReset{false};
 };
 
 // Your own SteeringBehaviors should follow here...
@@ -41,6 +41,9 @@ private:
 class Seek : public ISteeringBehavior
 {
 public:
+	Seek() = default;
+	virtual ~Seek() override = default;
+	
 	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent& Agent) override;
 };
 
@@ -48,6 +51,9 @@ public:
 class Flee : public ISteeringBehavior
 {
 public:
+	Flee() = default;
+	virtual ~Flee() override = default;
+	
 	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent& Agent) override;
 };
 
@@ -55,15 +61,61 @@ public:
 class Arrive : public Seek
 {
 public:
+	Arrive() = default;
+	virtual ~Arrive() override = default;
+	
 	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent& Agent) override;
 
 private:
-	bool MaxSpeedSet{false};
+	bool m_MaxSpeedSet{false};
 };
 
 //FACE
 class Face : public ISteeringBehavior
 {
 public:
+	Face() = default;
+	virtual ~Face() override = default;
+	
 	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent& Agent) override;
+};
+
+//PURSUIT
+class Pursuit : public ISteeringBehavior
+{
+public:
+	Pursuit() = default;
+	virtual ~Pursuit() override = default;
+	
+	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent& Agent) override;
+};
+
+//EVADE
+class Evade : public ISteeringBehavior
+{
+public:
+	Evade() = default;
+	virtual ~Evade() override = default;
+	
+	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent& Agent) override;
+};
+
+//WANDER
+class Wander : public Seek
+{
+public:
+	Wander() = default;
+	virtual ~Wander() override = default;
+	
+	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent& Agent) override;
+
+	void SetWanderOffset(float Offset) { m_OffsetDistance = Offset; }
+	void SetWanderRadius(float Radius) { m_Radius = Radius; }
+	void SetMaxAngleChange(float rad) { m_MaxAngleChange = rad; }
+
+protected:
+	float m_OffsetDistance{6.f};
+	float m_Radius{4.f};
+	float m_MaxAngleChange{45 / 180 * PI};
+	float m_WanderAngle{0.f};
 };
