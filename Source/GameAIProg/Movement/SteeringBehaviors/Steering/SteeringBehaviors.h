@@ -14,9 +14,10 @@ public:
 	virtual ~ISteeringBehavior() = default;
 
 	// Override to implement your own behavior
-	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent& Agent) = 0;
+	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent& Agent);
 
-	virtual void DebugLines(ASteeringAgent& Agent, FVector2D& LinearVelocity) final;
+	virtual void DebugLines(ASteeringAgent& Agent, FVector2D& LinearVelocity) final; //display debug lines
+	static void SetMaxSpeed(const ASteeringAgent& Agent); //Static to make sure it's for all instances of this class
 
 	void SetTarget(const FTargetData& NewTarget) { Target = NewTarget; }
 
@@ -27,29 +28,42 @@ public:
 	}
 
 protected:
+	static float MaxSpeed; //static to make sure it's global for all instances
 	FTargetData Target;
+
+private:
+	static bool MaxSpeedSet; //static to make sure it doesn't get reset when a new instance is made
+	bool MaxSpeedReset{false};
 };
 
 // Your own SteeringBehaviors should follow here...
+//SEEK
 class Seek : public ISteeringBehavior
 {
 public:
 	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent& Agent) override;
 };
 
+//FLEE
 class Flee : public ISteeringBehavior
 {
 public:
 	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent& Agent) override;
 };
 
+//ARRIVE
 class Arrive : public Seek
 {
 public:
 	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent& Agent) override;
-	
+
 private:
-	float MaxSpeed{};
 	bool MaxSpeedSet{false};
 };
 
+//FACE
+class Face : public ISteeringBehavior
+{
+public:
+	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent& Agent) override;
+};
