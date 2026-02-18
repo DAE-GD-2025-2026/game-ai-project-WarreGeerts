@@ -1,9 +1,4 @@
 #include "SteeringBehaviors.h"
-
-#include <ThirdParty/hlslcc/hlslcc/src/hlslcc_lib/ir_hierarchical_visitor.h>
-
-#include "Dataflow/DataflowEngineUtil.h"
-#include "DynamicMesh/DynamicMesh3.h"
 #include "GameAIProg/Movement/SteeringBehaviors/SteeringAgent.h"
 
 bool ISteeringBehavior::sm_MaxSpeedSet{false};
@@ -33,17 +28,17 @@ void ISteeringBehavior::SetMaxSpeed(const ASteeringAgent& Agent)
 
 //DEFAULT CLASS
 //*******
-void ISteeringBehavior::DebugLines(ASteeringAgent& Agent, FVector2D& LinearVelocity, FVector2D Target)
+void ISteeringBehavior::DebugLines(ASteeringAgent& Agent, SteeringOutput steering, FVector2D Target)
 {
 	const FVector Agent3D{Agent.GetPosition(), 0.0f};
-	const FVector Velocity3D{LinearVelocity, 0.0f};
+	const FVector Velocity3D{steering.LinearVelocity, 0.0f};
 
 	FVector2D _Target;
 	if (Target.IsNearlyZero())
 		_Target = m_Target.Position;
 	else
 		_Target = Target;
-	
+
 	//--point to end
 	const FVector ToTarget{FVector(_Target, 0.0f) - Agent3D};
 	const FVector Dir{ToTarget.GetSafeNormal()};
@@ -81,27 +76,30 @@ void ISteeringBehavior::DebugLines(ASteeringAgent& Agent, FVector2D& LinearVeloc
 //*******
 SteeringOutput Seek::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 {
-	ISteeringBehavior::CalculateSteering(DeltaT, Agent);
+	Agent.SetIsAutoOrienting(false);
+
 	SteeringOutput Steering{};
 
-	FVector2D CurrentVelocity{Agent.GetVelocity()};
+	//linear vel
+	FVector2D AgentForward{Agent.GetActorForwardVector().GetSafeNormal2D()};
+	Steering.LinearVelocity = AgentForward * Agent.GetMaxAngularSpeed();
 
-	FVector2D ToTarget{m_Target.Position - Agent.GetPosition()};
-	FVector2D DesiredVelocity{ToTarget.GetSafeNormal() * Agent.GetMaxLinearSpeed()};
+	//angular vel	
+	const float CurrentRotation{FMath::DegreesToRadians(Agent.GetRotation())};
+	Steering.AngularVelocity = FMath::Atan2(m_Target.Position.Y - Agent.GetPosition().Y,
+	                                        m_Target.Position.X - Agent.GetPosition().X) - CurrentRotation;
 
-	FVector2D SteeringForce{DesiredVelocity - CurrentVelocity};
-	constexpr float MaxForce{100};
-	SteeringForce = SteeringForce.GetClampedToMaxSize(MaxForce);
+	if (Steering.AngularVelocity > PI)
+	{
+		Steering.AngularVelocity -= 2 * PI;
+	}
+	else if (Steering.AngularVelocity < -PI)
+	{
+		Steering.AngularVelocity += 2 * PI;
+	}
 
-	SteeringForce /= Agent.GetMass();
+	DebugLines(Agent, Steering); // Line to target
 
-	FVector2D NewVelocity{CurrentVelocity + SteeringForce};
-	NewVelocity = NewVelocity.GetClampedToMaxSize(Agent.GetMaxLinearSpeed());
-
-	Steering.LinearVelocity = NewVelocity;
-
-
-	DebugLines(Agent, Steering.LinearVelocity);
 	return Steering;
 }
 
@@ -109,27 +107,10 @@ SteeringOutput Seek::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 //*******
 SteeringOutput Flee::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 {
-	ISteeringBehavior::CalculateSteering(DeltaT, Agent);
-	SteeringOutput Steering{};
+	SteeringOutput Steering{Seek::CalculateSteering(DeltaT, Agent)};
 
-	FVector2D CurrentVelocity{Agent.GetVelocity()};
+	Steering.AngularVelocity = -Steering.AngularVelocity;
 
-	FVector2D ToTarget{Agent.GetPosition() - m_Target.Position};
-	FVector2D DesiredVelocity{ToTarget.GetSafeNormal() * Agent.GetMaxLinearSpeed()};
-
-	FVector2D SteeringForce{DesiredVelocity - CurrentVelocity};
-	constexpr float MaxForce{100};
-	SteeringForce = SteeringForce.GetClampedToMaxSize(MaxForce);
-
-	SteeringForce /= Agent.GetMass();
-
-	FVector2D NewVelocity{CurrentVelocity + SteeringForce};
-	NewVelocity = NewVelocity.GetClampedToMaxSize(Agent.GetMaxLinearSpeed());
-
-	Steering.LinearVelocity = NewVelocity;
-
-
-	DebugLines(Agent, Steering.LinearVelocity);
 	return Steering;
 }
 
@@ -139,7 +120,7 @@ SteeringOutput Arrive::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 {
 	ISteeringBehavior::CalculateSteering(DeltaT, Agent);
 
-	float CurrentSpeed{Agent.GetMaxLinearSpeed()};
+	float CurrentSpeed;
 	constexpr float SlowRadius{500};
 	constexpr float TargetRadius{100};
 
@@ -180,17 +161,22 @@ SteeringOutput Arrive::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 //*******
 SteeringOutput Face::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 {
-	ISteeringBehavior::CalculateSteering(DeltaT, Agent);
-	Agent.SetMaxLinearSpeed(0);
+	//ISteeringBehavior::CalculateSteering(DeltaT, Agent);
 
 	SteeringOutput Steering{};
 
-	const FVector ToTarget{(FVector(m_Target.Position, 0.0f) - Agent.GetActorLocation()).GetSafeNormal()};
-	const float DesiredYaw{static_cast<float>(FMath::Atan2(ToTarget.Y, ToTarget.X) * (180.0f / PI))};
-	const float CurrentYaw{static_cast<float>(Agent.GetActorRotation().Yaw)};
-	const float DeltaYaw{FMath::FindDeltaAngleDegrees(CurrentYaw, DesiredYaw)};
-	constexpr float MaxTurnRate{180.0f}; // deg/s, tune this
-	Steering.AngularVelocity = FMath::Clamp(DeltaYaw * 1.5f, -MaxTurnRate, MaxTurnRate); // Proportional gain ~1.5
+	const float CurrentRotation{FMath::DegreesToRadians(Agent.GetRotation())};
+	Steering.AngularVelocity = FMath::Atan2(m_Target.Position.Y - Agent.GetPosition().Y,
+	                                        m_Target.Position.X - Agent.GetPosition().X) - CurrentRotation;
+
+	if (Steering.AngularVelocity > PI)
+	{
+		Steering.AngularVelocity -= 2 * PI;
+	}
+	else if (Steering.AngularVelocity < -PI)
+	{
+		Steering.AngularVelocity += 2 * PI;
+	}
 
 	DebugLines(Agent, Steering.LinearVelocity);
 
@@ -201,31 +187,32 @@ SteeringOutput Face::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 //*******
 SteeringOutput Pursuit::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 {
+	Agent.SetIsAutoOrienting(false);
+
 	SteeringOutput Steering{};
 
-	FVector2D CurrentVelocity{Agent.GetVelocity()};
+	//linear vel
+	FVector2D AgentForward{Agent.GetActorForwardVector().GetSafeNormal2D()};
+	Steering.LinearVelocity = AgentForward * Agent.GetMaxAngularSpeed();
 
-	const float T{
-		static_cast<float>(FVector2D::Distance(Agent.GetPosition(), m_Target.Position)) / Agent.GetMaxLinearSpeed()
-	};
+	//angular vel	
+	const float CurrentRotation{FMath::DegreesToRadians(Agent.GetRotation())};
+	Steering.AngularVelocity = FMath::Atan2(m_Target.Position.Y - Agent.GetPosition().Y,
+											m_Target.Position.X - Agent.GetPosition().X) - CurrentRotation;
 
-	FVector2D ToTarget{m_Target.Position - Agent.GetPosition() * T};
-	FVector2D DesiredVelocity{ToTarget.GetSafeNormal() * Agent.GetMaxLinearSpeed()};
+	if (Steering.AngularVelocity > PI)
+	{
+		Steering.AngularVelocity -= 2 * PI;
+	}
+	else if (Steering.AngularVelocity < -PI)
+	{
+		Steering.AngularVelocity += 2 * PI;
+	}
 
-	FVector2D SteeringForce{DesiredVelocity - CurrentVelocity};
-	constexpr float MaxForce{100};
-	SteeringForce = SteeringForce.GetClampedToMaxSize(MaxForce);
+	DebugLines(Agent, Steering); // Line to target
 
-	SteeringForce /= Agent.GetMass();
-
-	FVector2D NewVelocity{CurrentVelocity + SteeringForce};
-	NewVelocity = NewVelocity.GetClampedToMaxSize(Agent.GetMaxLinearSpeed());
-
-	Steering.LinearVelocity = NewVelocity;
-
-
-	DebugLines(Agent, Steering.LinearVelocity);
 	return Steering;
+
 }
 
 SteeringOutput Evade::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
