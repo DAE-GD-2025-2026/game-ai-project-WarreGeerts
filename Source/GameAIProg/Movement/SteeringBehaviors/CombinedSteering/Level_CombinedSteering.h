@@ -29,8 +29,16 @@ protected:
 
 private:
 	//Datamembers
-	bool UseMouseTarget = false;
+	bool UseMouseTarget = true;
 	bool CanDebugRender = false;
 
+	UPROPERTY()
+	ASteeringAgent* pDrunkAgent{nullptr};
+	ASteeringAgent* pEvadingAgent{nullptr};
+
+	BlendedSteering* pBlendedSteering = nullptr;
 	
+	Seek* pSeek{new Seek()};
+	Evade* pEvade{new Evade()};
+
 };

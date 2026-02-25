@@ -224,8 +224,17 @@ SteeringOutput Pursuit::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 //*******
 SteeringOutput Evade::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 {
-	Agent.SetIsAutoOrienting(false);
 	SteeringOutput Steering{};
+	constexpr float Radius{500};
+	DrawDebugCircle(Agent.GetWorld(), FVector(Agent.GetPosition(), 0.0f), Radius, 20, FColor::Red,
+					false, -1, 0, 0, FVector(1, 0, 0),
+					FVector(0, 1, 0));
+
+	if (FVector2D::Distance(m_Target.Position, Agent.GetPosition()) > Radius)
+	{
+		Steering.IsValid = false;
+	}	
+	Agent.SetIsAutoOrienting(false);
 
 	//Predict future position with T
 	const float Distance{static_cast<float>(FVector2D::Distance(Agent.GetPosition(), m_Target.Position))};
