@@ -36,7 +36,7 @@ public:
 #else // No space partitioning
 	void RegisterNeighbors(ASteeringAgent* const Agent);
 	int GetNrOfNeighbors() const { return NrOfNeighbors; }
-	const TArray<ASteeringAgent*>& GetNeighbors() const { return Neighbors; }
+	const TArray<ASteeringAgent*>& GetNeighbors() const { return pNeighbors; }
 #endif // USE_SPACE_PARTITIONING
 
 	FVector2D GetAverageNeighborPos() const;
@@ -55,7 +55,7 @@ private:
 	//int NrOfCellsX{ 10 };
 	//TArray<FVector2D> OldPositions{};
 #else // No space partitioning
-	TArray<ASteeringAgent*> Neighbors{};
+	TArray<ASteeringAgent*> pNeighbors{};
 #endif // USE_SPACE_PARTITIONING
 	
 	float NeighborhoodRadius{200.f};

@@ -36,15 +36,6 @@ SteeringOutput BlendedSteering::CalculateSteering(float DeltaT, ASteeringAgent& 
 		BlendedSteering.IsValid = true;
 	}
 
-	if (Agent.GetDebugRenderingEnabled())
-		DrawDebugDirectionalArrow(
-			Agent.GetWorld(),
-			Agent.GetActorLocation(),
-			Agent.GetActorLocation() + FVector{BlendedSteering.LinearVelocity, 0} * (Agent.GetMaxLinearSpeed() *
-				DeltaT),
-			30.f, FColor::Red
-		);
-
 	return BlendedSteering;
 }
 
@@ -56,8 +47,6 @@ SteeringOutput PrioritySteering::CalculateSteering(float DeltaT, ASteeringAgent&
 
 	for (ISteeringBehavior* const pBehavior : m_PriorityBehaviors)
 	{
-		
-		
 		Steering = pBehavior->CalculateSteering(DeltaT, Agent);
 
 		if (Steering.IsValid)

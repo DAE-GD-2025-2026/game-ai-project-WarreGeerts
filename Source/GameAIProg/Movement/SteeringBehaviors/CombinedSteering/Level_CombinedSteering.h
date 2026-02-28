@@ -34,6 +34,7 @@ private:
 
 	UPROPERTY()
 	ASteeringAgent* pDrunkAgent{nullptr};
+	UPROPERTY()
 	ASteeringAgent* pEvadingAgent{nullptr};
 
 	BlendedSteering* pBlendedSteering = nullptr;

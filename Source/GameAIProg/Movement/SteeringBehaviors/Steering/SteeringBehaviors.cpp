@@ -72,14 +72,6 @@ SteeringOutput Seek::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 
 	SteeringOutput Steering{};
 
-	//Check to stop on target
-	if (FVector2D::Distance(Agent.GetPosition(), m_Target.Position) < 20.0f)
-	{
-		Steering.LinearVelocity = FVector2D::ZeroVector;
-		Steering.AngularVelocity = 0.0f;
-		return Steering;
-	}
-
 	//Linear Velocity
 	Steering.LinearVelocity = FVector2D(Agent.GetActorForwardVector().GetSafeNormal2D() * Agent.GetMaxLinearSpeed());
 

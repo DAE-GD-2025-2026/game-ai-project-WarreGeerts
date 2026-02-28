@@ -25,7 +25,14 @@ protected:
 
 	int const FlockSize{100};
 
+	UPROPERTY()
+	ASteeringAgent* pFlockSteering{nullptr};
+	
 	TUniquePtr<Flock> pFlock{};
+	Cohesion* pCohesion{new Cohesion(pFlock.Get())};
+	BlendedSteering* pBlendedSteering = nullptr;
+
+	int NrOfAgents{0};
 	
 	UPROPERTY(EditAnywhere, Category = "Flocking")
 	ASteeringAgent* pAgentToEvade{nullptr}; // non owning ref
