@@ -115,28 +115,26 @@ SteeringOutput Arrive::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 	ISteeringBehavior::CalculateSteering(DeltaT, Agent);
 
 	float CurrentSpeed;
-	constexpr float SlowRadius{500};
-	constexpr float TargetRadius{100};
 
-	DrawDebugCircle(Agent.GetWorld(), FVector(Agent.GetPosition(), 0.0f), SlowRadius, 20, FColor::Blue,
+	DrawDebugCircle(Agent.GetWorld(), FVector(Agent.GetPosition(), 0.0f), m_Radius * 5.f, 20, FColor::Blue,
 	                false, -1, 0, 0, FVector(1, 0, 0),
 	                FVector(0, 1, 0));
-	DrawDebugCircle(Agent.GetWorld(), FVector(Agent.GetPosition(), 0.0f), TargetRadius, 20, FColor::Orange,
+	DrawDebugCircle(Agent.GetWorld(), FVector(Agent.GetPosition(), 0.0f), m_Radius, 20, FColor::Orange,
 	                false, -1, 0, 0, FVector(1, 0, 0),
 	                FVector(0, 1, 0));
 
 
-	if (FVector2D::Distance(Agent.GetPosition(), m_Target.Position) < TargetRadius)
+	if (FVector2D::Distance(Agent.GetPosition(), m_Target.Position) < m_Radius)
 	{
 		//set speed to 0
 		CurrentSpeed = 0.f;
 	}
-	else if (FVector2D::Distance(Agent.GetPosition(), m_Target.Position) <= SlowRadius)
+	else if (FVector2D::Distance(Agent.GetPosition(), m_Target.Position) <= m_Radius * 5.f)
 	{
 		//slow down with distance
 		const float Distance{static_cast<float>(FVector2D::Distance(Agent.GetPosition(), m_Target.Position))};
 		//distance / total distance
-		const float DistancePercentile{(Distance - TargetRadius) / SlowRadius};
+		const float DistancePercentile{(Distance - m_Radius) / m_Radius * 5.f};
 		const float Speed{m_MaxSpeed * DistancePercentile};
 		CurrentSpeed = Speed;
 	}
@@ -149,6 +147,11 @@ SteeringOutput Arrive::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 	Agent.SetMaxLinearSpeed(CurrentSpeed);
 	SteeringOutput Steering{Seek::CalculateSteering(DeltaT, Agent)};
 	return Steering;
+}
+
+void Arrive::SetTargetRadius(float radius)
+{
+	m_Radius = radius;
 }
 
 //FACE
@@ -219,13 +222,13 @@ SteeringOutput Evade::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 	SteeringOutput Steering{};
 	constexpr float Radius{500};
 	DrawDebugCircle(Agent.GetWorld(), FVector(Agent.GetPosition(), 0.0f), Radius, 20, FColor::Red,
-					false, -1, 0, 0, FVector(1, 0, 0),
-					FVector(0, 1, 0));
+	                false, -1, 0, 0, FVector(1, 0, 0),
+	                FVector(0, 1, 0));
 
 	if (FVector2D::Distance(m_Target.Position, Agent.GetPosition()) > Radius)
 	{
 		Steering.IsValid = false;
-	}	
+	}
 	Agent.SetIsAutoOrienting(false);
 
 	//Predict future position with T

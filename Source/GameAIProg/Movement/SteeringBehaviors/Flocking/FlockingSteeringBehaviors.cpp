@@ -14,13 +14,19 @@ SteeringOutput Cohesion::CalculateSteering(float deltaT, ASteeringAgent& pAgent)
 
 //*********************
 //SEPARATION (FLOCKING)
-SteeringOutput Separation::CalculateSteering(float deltaT, ASteeringAgent& pAgent)
+/*SteeringOutput Separation::CalculateSteering(float deltaT, ASteeringAgent& pAgent)
 {
+	SteeringOutput steeringOutput = Seek::CalculateSteering(deltaT, pAgent);	
+
+	const FVector2D toAgent = pAgent.GetPosition() - ;
+	FVector2D pushForce = toAgent;
 	
+	pushForce /= pushForce.SquaredLength();
 	
+	steeringOutput.LinearVelocity += pushForce;
 	
-	return Seek::CalculateSteering(deltaT, pAgent);
-}
+	return steeringOutput;
+}*/
 
 //*************************
 //VELOCITY MATCH (FLOCKING)

@@ -65,9 +65,10 @@ public:
 	virtual ~Arrive() override = default;
 	
 	virtual SteeringOutput CalculateSteering(float DeltaT, ASteeringAgent& Agent) override;
-
+	virtual void SetTargetRadius(float radius);
 private:
 	bool m_MaxSpeedSet{false};
+	float m_Radius{100.f};
 };
 
 //FACE
