@@ -7,6 +7,7 @@
 //COHESION (FLOCKING)
 SteeringOutput Cohesion::CalculateSteering(float deltaT, ASteeringAgent& pAgent)
 {
+	m_Target = FTargetData(pFlock->GetAverageNeighborPos());
 	SteeringOutput steeringOutput = Seek::CalculateSteering(deltaT, pAgent);	
 
 	return steeringOutput;
@@ -14,23 +15,36 @@ SteeringOutput Cohesion::CalculateSteering(float deltaT, ASteeringAgent& pAgent)
 
 //*********************
 //SEPARATION (FLOCKING)
-/*SteeringOutput Separation::CalculateSteering(float deltaT, ASteeringAgent& pAgent)
+SteeringOutput Separation::CalculateSteering(float deltaT, ASteeringAgent& pAgent)
 {
-	SteeringOutput steeringOutput = Seek::CalculateSteering(deltaT, pAgent);	
+	//for loop van alle neigbors
+	//afstand berekenen
 
-	const FVector2D toAgent = pAgent.GetPosition() - ;
-	FVector2D pushForce = toAgent;
+	FVector2D outputVelocity{};
 	
-	pushForce /= pushForce.SquaredLength();
+	for (auto Neighbor : pFlock->GetNeighbors())
+	{
+		const FVector2D toAgent = pAgent.GetPosition() - Neighbor->GetPosition();
 	
-	steeringOutput.LinearVelocity += pushForce;
+		FVector2D pushForce = toAgent;
+		pushForce /= pushForce.SquaredLength();
+
+		outputVelocity += pushForce;
+	}	
 	
-	return steeringOutput;
-}*/
+	SteeringOutput steering = Seek::CalculateSteering(deltaT, pAgent);
+	steering.LinearVelocity = outputVelocity;
+	
+	return steering;
+
+}
 
 //*************************
 //VELOCITY MATCH (FLOCKING)
 SteeringOutput Alignment::CalculateSteering(float deltaT, ASteeringAgent& pAgent)
 {
+	
+	//ga over alle agents en ga richting gemiddelede velocity
+	
 	return Seek::CalculateSteering(deltaT, pAgent);
 }

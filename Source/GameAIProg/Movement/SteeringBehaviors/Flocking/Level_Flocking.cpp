@@ -28,37 +28,13 @@ void ALevel_Flocking::BeginPlay()
 			pAgentToEvade,
 			true)
 	);
-
-	for (NrOfAgents = 0; NrOfAgents < FlockSize;)
-	{
-		FVector position{FVector::ZeroVector};
-		constexpr int radius{1000};
-		position.X = FMath::RandRange(-radius, radius);
-		position.Z = FMath::RandRange(-radius, radius);
-
-		pFlockSteering = GetWorld()->SpawnActor<ASteeringAgent>(SteeringAgentClass, FVector{position.X, 0, position.Z},
-		                                                        FRotator::ZeroRotator);
-		if (pFlockSteering)
-		{
-			const std::vector<BlendedSteering::WeightedBehavior> FlockBehaviors{
-				{pCohesion, 1.f}
-			};
-			pBlendedSteering = new BlendedSteering(FlockBehaviors);
-			pFlockSteering->SetSteeringBehavior(pBlendedSteering);
-			++NrOfAgents;
-		}
-	}
+	
 }
 
 // Called every frame
 void ALevel_Flocking::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-	FTargetData Target;
-	Target.Position = pFlock->GetAverageNeighborPos();
-
-	pCohesion->SetTarget(Target);
 
 	pFlock->ImGuiRender(WindowPos, WindowSize);
 	pFlock->Tick(DeltaTime);

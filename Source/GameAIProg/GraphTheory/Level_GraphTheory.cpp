@@ -41,7 +41,9 @@ void ALevel_GraphTheory::BeginPlay()
 		Player->SetCameraProjection(ECameraProjectionMode::Orthographic);
 	}
 	
-	// TODO Make the graph and a couple connected nodes here...
+	// TODO Make the graph and a couple connected nodes here... 
+	Renderer = GraphRenderer{GetWorld()};
+	
 	auto NodeId1 {Graph.AddNode(std::make_unique<Node>(FVector2D(0.f,0.f)))};
 	auto NodeId2 {Graph.AddNode(std::make_unique<Node>(FVector2D(100.f,100.f)))};
 	Graph.AddConnection(NodeId1,NodeId2);

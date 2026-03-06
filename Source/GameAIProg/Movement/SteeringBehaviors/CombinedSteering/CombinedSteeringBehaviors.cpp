@@ -3,7 +3,7 @@
 #include "../SteeringAgent.h"
 #include "DynamicMesh/DynamicMesh3.h"
 
-BlendedSteering::BlendedSteering(const std::vector<WeightedBehavior>& WeightedBehaviors)
+BlendedSteering:: BlendedSteering(const std::vector<WeightedBehavior>& WeightedBehaviors)
 	: WeightedBehaviors(WeightedBehaviors)
 {
 };

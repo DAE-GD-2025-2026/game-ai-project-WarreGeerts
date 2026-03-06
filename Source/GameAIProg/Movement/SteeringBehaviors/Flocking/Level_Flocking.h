@@ -29,7 +29,11 @@ protected:
 	ASteeringAgent* pFlockSteering{nullptr};
 	
 	TUniquePtr<Flock> pFlock{};
-	Cohesion* pCohesion{new Cohesion(pFlock.Get())};
+	
+	Cohesion* pCohesion;
+	Separation* pSeparation;
+	
+	
 	BlendedSteering* pBlendedSteering = nullptr;
 
 	int NrOfAgents{0};

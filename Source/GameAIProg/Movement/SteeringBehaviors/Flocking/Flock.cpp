@@ -18,6 +18,26 @@ Flock::Flock(
 
 	pNeighbors.SetNum(FlockSize);
 	NrOfNeighbors = 0;
+	
+	for (int NrOfAgents = 0; NrOfAgents < FlockSize;)
+	{
+		FVector position{FVector::ZeroVector};
+		constexpr int radius{1000};
+		position.X = FMath::RandRange(-radius, radius);
+		position.Z = FMath::RandRange(-radius, radius);
+
+		Agents[NrOfAgents] = pWorld->SpawnActor<ASteeringAgent>(AgentClass, FVector{position.X, 0, position.Z},
+		                                                        FRotator::ZeroRotator);
+		if (Agents[NrOfAgents])
+		{
+			const std::vector<BlendedSteering::WeightedBehavior> FlockBehaviors{
+				{pCohesionBehavior.get(), .5f}, {pSeparationBehavior.get(), .5f}
+			};
+			pBlendedSteering = std::make_unique<BlendedSteering>(FlockBehaviors);
+			Agents[NrOfAgents]->SetSteeringBehavior(pBlendedSteering.get());
+			++NrOfAgents;
+		}
+	}
 }
 
 Flock::~Flock()
@@ -38,9 +58,8 @@ void Flock::Tick(float DeltaTime)
 		if (!pAgent) continue;
 
 		RegisterNeighbors(pAgent);
-		
+
 		pAgent->Tick(DeltaTime);
-		
 	}
 }
 
@@ -144,7 +163,7 @@ FVector2D Flock::GetAverageNeighborPos() const
 	{
 		sum += pNeighbors[idx]->GetPosition();
 	}
-	
+
 	avgPosition = sum / static_cast<float>(NrOfNeighbors);
 	return avgPosition;
 }
@@ -153,13 +172,13 @@ FVector2D Flock::GetAverageNeighborVelocity() const
 {
 	FVector2D avgVelocity = FVector2D::ZeroVector;
 	if (NrOfNeighbors == 0) return avgVelocity;
-	
+
 	FVector2D sum{FVector2D::ZeroVector};
 	for (auto idx{0}; idx < NrOfNeighbors; ++idx)
 	{
 		sum += FVector2D(pNeighbors[idx]->GetVelocity());
 	}
-	
+
 	avgVelocity = sum / static_cast<float>(NrOfNeighbors);
 	return avgVelocity;
 }
