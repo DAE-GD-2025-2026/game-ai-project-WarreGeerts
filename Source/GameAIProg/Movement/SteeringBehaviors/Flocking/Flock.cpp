@@ -40,11 +40,18 @@ Flock::Flock(
 	};
 	pPrioritySteering = std::make_unique<PrioritySteering>(PriorityBehaviors);
 
+	pPartitionedSpace = std::make_unique<CellSpace>(pWorld, WorldSize * 2.f, WorldSize * 2.f,
+	                                                NrOfCellsX, NrOfCellsX, FlockSize);
+
 	Agents.SetNum(FlockSize);
+#ifndef GAMEAI_USE_SPACE_PARTITIONING
 	pNeighbors.SetNum(FlockSize);
+#endif
+	OldPositions.SetNum(FlockSize);
+
 	NrOfNeighbors = 0;
 
-	for (int NrOfAgents = 0; NrOfAgents < FlockSize; )
+	for (int NrOfAgents = 0; NrOfAgents < FlockSize;)
 	{
 		FVector Position{FVector::ZeroVector};
 		constexpr int Radius{1000};
@@ -54,17 +61,18 @@ Flock::Flock(
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-		Agents[NrOfAgents] = pWorld->SpawnActor<ASteeringAgent>(AgentClass, FVector{Position.X, Position.Z,0.f},
+		Agents[NrOfAgents] = pWorld->SpawnActor<ASteeringAgent>(AgentClass, FVector{Position.X, Position.Z, 0.f},
 		                                                        FRotator::ZeroRotator, SpawnParams);
 
 		if (Agents[NrOfAgents])
 		{
 			Agents[NrOfAgents]->SetSteeringBehavior(pPrioritySteering.get());
 			Agents[NrOfAgents]->SetActorTickEnabled(false);
-			
+
+			pPartitionedSpace->AddAgent(*Agents[NrOfAgents]);
+			OldPositions[NrOfAgents] = Agents[NrOfAgents]->GetPosition();
 			++NrOfAgents;
 		}
-		
 	}
 }
 
@@ -100,10 +108,20 @@ void Flock::Tick(float DeltaTime)
 	{
 		if (!pAgent) continue;
 
+#ifdef GAMEAI_USE_SPACE_PARTITIONING
+		pPartitionedSpace->UpdateAgentCell(*pAgent, OldPositions[Agents.IndexOfByKey(pAgent)]);
+#endif
+
+		OldPositions[Agents.IndexOfByKey(pAgent)] = pAgent->GetPosition();
+
+
+#ifdef GAMEAI_USE_SPACE_PARTITIONING
+		pPartitionedSpace->RegisterNeighbors(*pAgent, NeighborhoodRadius);
+#else
 		RegisterNeighbors(pAgent);
+#endif
 
 		pAgent->Tick(DeltaTime);
-
 
 		if (TrimWorld)
 		{
@@ -143,13 +161,6 @@ void Flock::Tick(float DeltaTime)
 void Flock::RenderDebug()
 {
 	// TODO: Render all the agents in the flock
-	/*for (auto Agent : Agents)
-	{
-		if (Agent)
-		{
-			Agent->SetDebugRenderingEnabled(DebugRenderSteering);
-		}
-	}*/
 	// ONLY FIRST AGENT gets debug
 	for (ASteeringAgent* Agent : Agents)
 	{
@@ -166,6 +177,14 @@ void Flock::RenderDebug()
 	{
 		RenderNeighborhood();
 	}
+
+#ifdef GAMEAI_USE_SPACE_PARTITIONING
+	if (DebugRenderPartitions)
+	{
+		pPartitionedSpace->RenderCells();
+	}
+#endif
+
 
 	if (TrimWorld)
 	{
@@ -224,6 +243,7 @@ void Flock::ImGuiRender(ImVec2 const& WindowPos, ImVec2 const& WindowSize)
 		// TODO: implement ImGUI checkboxes for debug rendering here
 		ImGui::Checkbox("Debug Render Steering", &DebugRenderSteering);
 		ImGui::Checkbox("Debug Render Neighborhood", &DebugRenderNeighborhood);
+		ImGui::Checkbox("Debug Render Partitioning", &DebugRenderPartitions);
 
 		ImGui::Spacing();
 		ImGui::Separator();
@@ -277,18 +297,44 @@ void Flock::RenderNeighborhood()
 	// TODO: Debugrender the neighbors for the first agent in the flock
 	if (Agents.Num() == 0 || !Agents[0]) return;
 
+#ifdef GAMEAI_USE_SPACE_PARTITIONING
+	pPartitionedSpace->RegisterNeighbors(*Agents[0], NeighborhoodRadius);
+#else
 	RegisterNeighbors(Agents[0]);
+#endif
 
-	auto pos = Agents[0]->GetPosition();
-	DrawDebugCircle(pWorld, FVector(pos,0.f), NeighborhoodRadius, 32, FColor::Yellow, false,
+	FVector pos = FVector(Agents[0]->GetPosition(), 0);
+	DrawDebugCircle(pWorld, pos, NeighborhoodRadius, 32, FColor::Yellow, false,
 	                -1, 0, 0, FVector(1, 0, 0), FVector(0, 1, 0));
 
+
+#ifdef GAMEAI_USE_SPACE_PARTITIONING
+	FVector Radius{NeighborhoodRadius, NeighborhoodRadius, 0};
+
+	DrawDebugBox(pWorld, pos, Radius, FColor::Yellow, false, -1, 0, 2.f);
+
+	for (auto idx{0}; idx < GetNrOfNeighbors(); ++idx)
+	{
+		if (GetNeighbors()[idx])
+		{
+			DrawDebugSphere(pWorld, FVector(GetNeighbors()[idx]->GetPosition(), 10.f), 15.f,
+			                16, FColor::Cyan, false, -1.f);
+			DrawDebugLine(pWorld, pos,
+			              FVector(GetNeighbors()[idx]->GetPosition(), 0.f),
+			              FColor::Yellow, false, -1.f);
+		}
+	}
+#else
 	for (ASteeringAgent* PNeighbor : pNeighbors)
 	{
 		if (PNeighbor)
-			DrawDebugSphere(pWorld, FVector(PNeighbor->GetPosition(),10.f), 15.f, 16, FColor::Cyan, false, -1.f);
-			DrawDebugLine(pWorld, FVector(pos,0.f), FVector(PNeighbor->GetPosition(),0.f), FColor::Yellow, false, -1.f);
+		{
+			DrawDebugSphere(pWorld, FVector(PNeighbor->GetPosition(), 10.f), 15.f, 16, FColor::Cyan, false, -1.f);
+			DrawDebugLine(pWorld, pos, FVector(PNeighbor->GetPosition(), 0.f), FColor::Yellow, false,
+			              -1.f);
+		}
 	}
+#endif
 }
 
 #ifndef GAMEAI_USE_SPACE_PARTITIONING
@@ -327,14 +373,14 @@ const TArray<ASteeringAgent*>& Flock::GetNeighbors() const
 
 FVector2D Flock::GetAverageNeighborPos() const
 {
-	if (NrOfNeighbors == 0 || NrOfNeighbors > pNeighbors.Num())
+	if (NrOfNeighbors == 0 || NrOfNeighbors > GetNeighbors().Num())
 		return FVector2D::ZeroVector;
 
 	FVector2D sum{FVector2D::ZeroVector};
 
 	for (auto idx{0}; idx < NrOfNeighbors; ++idx)
 	{
-		sum += pNeighbors[idx]->GetPosition();
+		sum += GetNeighbors()[idx]->GetPosition();
 	}
 
 	FVector2D avgPosition = sum / static_cast<float>(NrOfNeighbors);
@@ -343,14 +389,14 @@ FVector2D Flock::GetAverageNeighborPos() const
 
 FVector2D Flock::GetAverageNeighborVelocity() const
 {
-	if (NrOfNeighbors == 0 || NrOfNeighbors > pNeighbors.Num())
+	if (NrOfNeighbors == 0 || NrOfNeighbors > GetNeighbors().Num())
 		return FVector2D::ZeroVector;
 
 
 	FVector2D sum{FVector2D::ZeroVector};
 	for (auto idx{0}; idx < NrOfNeighbors; ++idx)
 	{
-		sum += pNeighbors[idx]->GetLinearVelocity();
+		sum += GetNeighbors()[idx]->GetLinearVelocity();
 	}
 
 	FVector2D avgVelocity = sum / static_cast<float>(NrOfNeighbors);
