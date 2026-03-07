@@ -30,13 +30,18 @@ void ISteeringBehavior::SetMaxSpeed(const ASteeringAgent& Agent)
 //*******
 void ISteeringBehavior::DebugLines(ASteeringAgent& Agent, SteeringOutput Steering, FVector2D Target)
 {
-	const FVector Agent3D{Agent.GetPosition(), 0.0f};
+	if (!Agent.GetDebugRenderingEnabled()) return;
 
 	FVector2D _Target;
 	if (Target.IsNearlyZero())
 		_Target = m_Target.Position;
 	else
 		_Target = Target;
+
+	if (_Target.IsNearlyZero() || _Target.Equals(Agent.GetPosition(), 10.0f))
+		return;
+
+	const FVector Agent3D{Agent.GetPosition(), 0.0f};
 
 	//GREEN LINE: Target direction
 	const FVector Target3D{_Target, 0.0f};
@@ -116,12 +121,15 @@ SteeringOutput Arrive::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 
 	float CurrentSpeed;
 
-	DrawDebugCircle(Agent.GetWorld(), FVector(Agent.GetPosition(), 0.0f), m_Radius * 5.f, 20, FColor::Blue,
-	                false, -1, 0, 0, FVector(1, 0, 0),
-	                FVector(0, 1, 0));
-	DrawDebugCircle(Agent.GetWorld(), FVector(Agent.GetPosition(), 0.0f), m_Radius, 20, FColor::Orange,
-	                false, -1, 0, 0, FVector(1, 0, 0),
-	                FVector(0, 1, 0));
+	if (Agent.GetDebugRenderingEnabled())
+	{
+		DrawDebugCircle(Agent.GetWorld(), FVector(Agent.GetPosition(), 0.0f), m_Radius * 5.f, 20, FColor::Blue,
+		                false, -1, 0, 0, FVector(1, 0, 0),
+		                FVector(0, 1, 0));
+		DrawDebugCircle(Agent.GetWorld(), FVector(Agent.GetPosition(), 0.0f), m_Radius, 20, FColor::Orange,
+		                false, -1, 0, 0, FVector(1, 0, 0),
+		                FVector(0, 1, 0));
+	}
 
 
 	if (FVector2D::Distance(Agent.GetPosition(), m_Target.Position) < m_Radius)
@@ -221,9 +229,12 @@ SteeringOutput Evade::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 {
 	SteeringOutput Steering{};
 	constexpr float Radius{500};
-	DrawDebugCircle(Agent.GetWorld(), FVector(Agent.GetPosition(), 0.0f), Radius, 20, FColor::Red,
-	                false, -1, 0, 0, FVector(1, 0, 0),
-	                FVector(0, 1, 0));
+	if (Agent.GetDebugRenderingEnabled())
+	{
+		DrawDebugCircle(Agent.GetWorld(), FVector(Agent.GetPosition(), 0.0f), Radius, 20, FColor::Red,
+		                false, -1, 0, 0, FVector(1, 0, 0),
+		                FVector(0, 1, 0));		
+	}
 
 	if (FVector2D::Distance(m_Target.Position, Agent.GetPosition()) > Radius)
 	{
@@ -298,11 +309,14 @@ SteeringOutput Wander::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 	                                        Agent.GetMaxAngularSpeed());
 
 	//Debug: circle at correct position, line to world target
-	const FVector CirclePos{
-		FVector(Agent.GetPosition().X, Agent.GetPosition().Y, 0.0f) +
-		FVector(AgentForward, 0.0f) * m_OffsetDistance
-	};
-	DrawDebugCircle(Agent.GetWorld(), CirclePos, m_Radius, 20, FColor::Blue, false, -1);
+	if (Agent.GetDebugRenderingEnabled())
+	{
+		const FVector CirclePos{
+			FVector(Agent.GetPosition().X, Agent.GetPosition().Y, 0.0f) +
+			FVector(AgentForward, 0.0f) * m_OffsetDistance
+		};
+		DrawDebugCircle(Agent.GetWorld(), CirclePos, m_Radius, 20, FColor::Blue, false, -1);
+	}
 
 	const FVector2D WorldTargetPos{Agent.GetPosition() + WanderTargetDir * 100};
 	DebugLines(Agent, Steering, WorldTargetPos);

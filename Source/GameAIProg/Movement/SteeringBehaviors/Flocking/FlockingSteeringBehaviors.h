@@ -20,7 +20,7 @@ private:
 
 //SEPARATION - FLOCKING
 //*********************
-class Separation final : public Seek
+class Separation final : public ISteeringBehavior
 {
 public:
 	Separation(Flock* const Flock) : pFlock(Flock)
@@ -36,7 +36,7 @@ private:
 
 //VELOCITY MATCH - FLOCKING
 //************************
-class Alignment final : public Seek
+class Alignment final : public ISteeringBehavior
 {
 public:
 	Alignment(Flock* const pFlock) : pFlock(pFlock)

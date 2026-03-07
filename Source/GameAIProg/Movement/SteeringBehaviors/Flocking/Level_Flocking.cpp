@@ -17,7 +17,16 @@ void ALevel_Flocking::BeginPlay()
 	Super::BeginPlay();
 
 	TrimWorld->SetTrimWorldSize(3000.f);
-	TrimWorld->bShouldTrimWorld = true;
+	TrimWorld->bShouldTrimWorld = false;
+
+	pAgentToEvade = GetWorld()->SpawnActor<ASteeringAgent>(SteeringAgentClass, FVector::ZeroVector,
+	                                                       FRotator::ZeroRotator);
+	
+	if (pAgentToEvade)
+	{
+		pEvadeBehavior = std::make_unique<Seek>();
+		pAgentToEvade->SetSteeringBehavior(pEvadeBehavior.get());
+	}
 
 	pFlock = TUniquePtr<Flock>(
 		new Flock(
@@ -28,7 +37,6 @@ void ALevel_Flocking::BeginPlay()
 			pAgentToEvade,
 			true)
 	);
-	
 }
 
 // Called every frame
@@ -39,6 +47,8 @@ void ALevel_Flocking::Tick(float DeltaTime)
 	pFlock->ImGuiRender(WindowPos, WindowSize);
 	pFlock->Tick(DeltaTime);
 	pFlock->RenderDebug();
+	if (bUseMouseTarget && pAgentToEvade && pEvadeBehavior)
+		pEvadeBehavior->SetTarget(MouseTarget);
 	if (bUseMouseTarget)
 		pFlock->SetTarget_Seek(MouseTarget);
 }

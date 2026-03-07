@@ -40,4 +40,5 @@ protected:
 	
 	UPROPERTY(EditAnywhere, Category = "Flocking")
 	ASteeringAgent* pAgentToEvade{nullptr}; // non owning ref
+	std::unique_ptr<Seek> pEvadeBehavior{};
 };
