@@ -28,7 +28,7 @@ public:
 	}
 
 protected:
-	static float m_MaxSpeed; //static to make sure it's global for all instances
+	static float sm_MaxSpeed; //static to make sure it's global for all instances
 	FTargetData m_Target;
 
 private:

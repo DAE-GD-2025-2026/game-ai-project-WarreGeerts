@@ -2,7 +2,7 @@
 #include "GameAIProg/Movement/SteeringBehaviors/SteeringAgent.h"
 
 bool ISteeringBehavior::sm_MaxSpeedSet{false};
-float ISteeringBehavior::m_MaxSpeed{0};
+float ISteeringBehavior::sm_MaxSpeed{0};
 
 SteeringOutput ISteeringBehavior::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 {
@@ -11,7 +11,7 @@ SteeringOutput ISteeringBehavior::CalculateSteering(float DeltaT, ASteeringAgent
 
 	if (!m_MaxSpeedReset)
 	{
-		Agent.SetMaxLinearSpeed(m_MaxSpeed);
+		Agent.SetMaxLinearSpeed(sm_MaxSpeed);
 		m_MaxSpeedReset = true;
 	}
 	return Steering;
@@ -21,7 +21,7 @@ void ISteeringBehavior::SetMaxSpeed(const ASteeringAgent& Agent)
 {
 	if (!sm_MaxSpeedSet)
 	{
-		m_MaxSpeed = Agent.GetMaxLinearSpeed();
+		sm_MaxSpeed = Agent.GetMaxLinearSpeed();
 		sm_MaxSpeedSet = true;
 	}
 }
@@ -73,10 +73,13 @@ void ISteeringBehavior::DebugLines(ASteeringAgent& Agent, SteeringOutput Steerin
 //*******
 SteeringOutput Seek::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 {
-	Agent.SetIsAutoOrienting(false);
-
+	//Agent.SetIsAutoOrienting(false);
+	SetMaxSpeed(Agent);
 	SteeringOutput Steering{};
-
+	Agent.SetMaxLinearSpeed(sm_MaxSpeed);
+	Steering.LinearVelocity = (m_Target.Position - Agent.GetPosition());
+	
+	/*
 	//Linear Velocity
 	Steering.LinearVelocity = FVector2D(Agent.GetActorForwardVector().GetSafeNormal2D() * Agent.GetMaxLinearSpeed());
 
@@ -96,6 +99,7 @@ SteeringOutput Seek::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 	Steering.AngularVelocity = FMath::Clamp(Steering.AngularVelocity,
 	                                        -Agent.GetMaxAngularSpeed(),
 	                                        Agent.GetMaxAngularSpeed());
+	                                        */
 
 	DebugLines(Agent, Steering);
 
@@ -143,13 +147,13 @@ SteeringOutput Arrive::CalculateSteering(float DeltaT, ASteeringAgent& Agent)
 		const float Distance{static_cast<float>(FVector2D::Distance(Agent.GetPosition(), m_Target.Position))};
 		//distance / total distance
 		const float DistancePercentile{(Distance - m_Radius) / m_Radius * 5.f};
-		const float Speed{m_MaxSpeed * DistancePercentile};
+		const float Speed{sm_MaxSpeed * DistancePercentile};
 		CurrentSpeed = Speed;
 	}
 	else
 	{
 		//MaxSpeed
-		CurrentSpeed = m_MaxSpeed;
+		CurrentSpeed = sm_MaxSpeed;
 	}
 
 	Agent.SetMaxLinearSpeed(CurrentSpeed);
