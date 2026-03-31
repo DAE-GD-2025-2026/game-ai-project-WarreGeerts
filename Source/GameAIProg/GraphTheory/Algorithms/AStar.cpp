@@ -13,24 +13,34 @@ AStar::AStar(Graph* const pGraph, HeuristicFunctions::Heuristic hFunction)
 std::vector<Node*> AStar::FindPath(Node* const pStartNode, Node* const pGoalNode)
 {
 	//Node, Cost of node f(n) = g(n) + h(n)
+	std::vector<Node*> ClosedList{};
 	std::map<Node*, int> OpenList{};
-	std::map<Node*, int> ClosedList{};
-	std::vector<Node*> Path{};
 
-	std::map<Node*, Node*> cameFrom{};
+	auto H{GetHeuristicCost(pStartNode, pGoalNode)};
 
-	int StartG{0};
-	OpenList.insert({pStartNode, StartG});
 	Node* CurrentNode{pStartNode};
+	OpenList.insert({CurrentNode, 0});
 
-	while (!OpenList.empty())
+	while (CurrentNode->GetId() != pGoalNode->GetId())
 	{
+		for (const auto& Neighbor : pGraph->FindConnectionsFrom(CurrentNode->GetId()))
+		{
+			float G = FVector2D::Distance(
+				pGraph->GetNode(CurrentNode->GetId())->GetPosition(), pGraph->GetNode(Neighbor->GetToId())->GetPosition()
+			);
+
+			OpenList.insert({pGraph->GetNode(Neighbor->GetToId()).get(), G});
+		}
+		ClosedList.emplace_back(CurrentNode);
+		OpenList.erase(CurrentNode);
+
+
 		float LowestCost{FLT_MAX};
 		Node* LowestNode{nullptr};
 		for (const auto& [node,G] : OpenList)
 		{
-			const auto H = GetHeuristicCost(node, pGoalNode);
-			const auto F{G + H};
+			H = GetHeuristicCost(node, pGoalNode);
+			auto F{G + H};
 			if (F < LowestCost)
 			{
 				LowestCost = F;
@@ -38,76 +48,9 @@ std::vector<Node*> AStar::FindPath(Node* const pStartNode, Node* const pGoalNode
 			}
 		}
 		CurrentNode = LowestNode;
-
-		if (CurrentNode->GetId() == pGoalNode->GetId()) break;
-
-		for (const auto& Neighbor : pGraph->FindConnectionsFrom(CurrentNode->GetId()))
-		{
-			auto pNextNode = pGraph->GetNode(Neighbor->GetToId()).get();
-
-			const int PrevG = OpenList[CurrentNode];
-			const int EdgeCost = Neighbor->GetWeight();
-			const int TotalG = PrevG + EdgeCost;
-
-			const auto ClosedIt = ClosedList.find(pNextNode);
-			if (ClosedIt != ClosedList.end())
-			{
-				if (TotalG >= ClosedIt->second) continue;
-				ClosedList.erase(ClosedIt);
-			}
-
-			const auto OpenIt = OpenList.find(pNextNode);
-			if (OpenIt != OpenList.end())
-			{
-				if (TotalG >= OpenIt->second) continue;
-				OpenList.erase(OpenIt);
-			}
-			
-			OpenList.insert({pNextNode, TotalG});
-			cameFrom[pNextNode] = CurrentNode;
-		}
-		const auto CurG = OpenList.find(CurrentNode)->second;
-		OpenList.erase(CurrentNode);
-		ClosedList.insert({CurrentNode, CurG});
 	}
-
-	if (CurrentNode->GetId() != pGoalNode->GetId())
-	{
-		Node* closestNode = nullptr;
-		float closestDist = FLT_MAX;
-
-		for (const auto& [node, g] : ClosedList)
-		{
-			float dist = GetHeuristicCost(node, pGoalNode);
-			if (dist < closestDist)
-			{
-				closestDist = dist;
-				closestNode = node;
-			}
-		}
-
-		if (closestNode)
-		{
-			CurrentNode = closestNode;
-		}
-		else
-		{
-			return {};
-		}
-	}
-
-	Node* Current = CurrentNode;
-	while (Current != pStartNode)
-	{
-		Path.push_back(Current);
-		auto it = cameFrom.find(Current);
-		if (it == cameFrom.end()) break;
-		Current = it->second;
-	}
-	Path.push_back(pStartNode);
-	std::reverse(Path.begin(), Path.end());
-
-	return Path;
+	ClosedList.emplace_back(pGoalNode);
+	return ClosedList;
 }
 
 float AStar::GetHeuristicCost(Node* const pStartNode, Node* const pEndNode) const
