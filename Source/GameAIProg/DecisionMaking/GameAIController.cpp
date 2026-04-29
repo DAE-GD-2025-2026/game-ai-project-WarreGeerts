@@ -1,44 +1,33 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+
 #include "GameAIController.h"
+
 #include "BehaviorTree/BlackboardComponent.h"
 #include "FSM/FSMComponent.h"
-#include "Kismet/GameplayStatics.h" // Added for finding the player
 
+
+// Sets default values
 AGameAIController::AGameAIController()
 {
+	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-	BrainComponent = CreateDefaultSubobject<UFSMComponent>(TEXT("FSMComponent"));
+	BrainComponent = CreateDefaultSubobject<UFSMComponent>(TEXT("FSMComponent"));;
 }
 
+// Called when the game starts or when spawned
 void AGameAIController::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	// Create Blackboard if need be
 	InitFiniteStateMachine();
 }
 
+// Called every frame
 void AGameAIController::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-	APawn* MyPawn = GetPawn();
-	// Try to find the ThiefActor from the blackboard
-	AActor* Thief = Cast<AActor>(Blackboard->GetValueAsObject("ThiefActor"));
-
-	if (MyPawn && Thief)
-	{
-		// 1. Calculate distance
-		float Distance = FVector::Dist(MyPawn->GetActorLocation(), Thief->GetActorLocation());
-        
-		// 2. Check Line of Sight
-		bool bHasLOS = LineOfSightTo(Thief);
-
-		// 3. Update Blackboard (This triggers the FSM Transitions!)
-		// Adjust 1000.0f to whatever detection radius you want
-		bool bIsVisible = (Distance < 1000.0f && bHasLOS);
-		Blackboard->SetValueAsBool("IsTargetVisible", bIsVisible);
-        
-		// Also keep track of our own location for the states to use
-		Blackboard->SetValueAsVector("SelfLocation", MyPawn->GetActorLocation());
-	}
 }
 
 void AGameAIController::InitFiniteStateMachine()
@@ -46,19 +35,20 @@ void AGameAIController::InitFiniteStateMachine()
 	UFSMComponent* FSMComp = FindComponentByClass<UFSMComponent>();
 	if (ensure(FSMComp) && FSMBlackboardAsset)
 	{
-		// UseBlackboard initializes the component and the asset
-		UBlackboardComponent* BBComp;
-		if (UseBlackboard(FSMBlackboardAsset, BBComp))
-		{
-			Blackboard = BBComp;
-		}
+		UBlackboardComponent* BlackboardComp = Blackboard;
+		UseBlackboard(FSMBlackboardAsset, BlackboardComp);
+		Blackboard = BlackboardComp;
 	}
 }
 
 void AGameAIController::RunFiniteStateMachine()
 {
-	if (UFSMComponent* FSMComp = Cast<UFSMComponent>(BrainComponent))
+	UFSMComponent* FSMComp = FindComponentByClass<UFSMComponent>();
+	if (ensure(FSMComp))
 	{
 		FSMComp->StartLogic();
 	}
 }
+
+
+

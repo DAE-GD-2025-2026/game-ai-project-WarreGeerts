@@ -2,7 +2,7 @@
 
 
 #include "FSMComponent.h"
-#include "FSM.h"
+
 
 // Sets default values for this component's properties
 UFSMComponent::UFSMComponent()
@@ -12,24 +12,17 @@ UFSMComponent::UFSMComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 
 	// TODO Setup FSM
-	FSMInstance = std::make_unique<GameAI::FSM::FSM>();
 }
-
-UFSMComponent::~UFSMComponent() = default;
-
-UFSMComponent::UFSMComponent(FVTableHelper& Helper) : Super(Helper) {}
 
 
 void UFSMComponent::AddState(std::unique_ptr<GameAI::FSM::State>&& NewState)
 {
 	// TODO
-	FSMInstance->AddState(std::move(NewState));
 }
 
-void UFSMComponent::AddTransition(GameAI::FSM::State* From, GameAI::FSM::State* To, std::function<bool()> EvalFunc)
+void UFSMComponent::AddTransition(GameAI::FSM::State* From, GameAI::FSM::State* To, std::function<bool()> EvalFunc) const
 {
 	// TODO
-	FSMInstance->AddTransition(From, To, std::move(EvalFunc));
 }
 
 // Called when the game starts
@@ -44,10 +37,6 @@ void UFSMComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorCo
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	// TODO
-	if (bIsRunning && FSMInstance)
-	{
-		FSMInstance->Update(DeltaTime);
-	}
 }
 
 void UFSMComponent::StartLogic()
@@ -55,15 +44,11 @@ void UFSMComponent::StartLogic()
 	Super::StartLogic();
 
 	// TODO
-	bIsRunning = true;
-	FSMInstance->Start(); // starts from whichever state was set as initial
 }
 
 void UFSMComponent::StopLogic(const FString& Reason)
 {
 	// TODO
-	bIsRunning = false;
-	FSMInstance->Stop();
 }
 
 bool UFSMComponent::IsRunning() const
