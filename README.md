@@ -39,4 +39,9 @@ The project is organized to maintain a clean separation between engine content a
 This project is part of the **Game AI Programming** curriculum in semester 4 at Howest DAE in the major Game Development (GD). 
 
 ---
-*Note: This repository is currently in development. The final Exam Project implementation is TBD.*
+
+# Extra Assignment
+I added the extra assignment "Fallback Path". 
+This extra assignement is from the Week 5 Pathfinding classes.
+The extra assignment makes it so the agent finds a path that gets itself the closest to the end goal if the end goal is unreachable.
+
