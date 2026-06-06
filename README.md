@@ -1,3 +1,9 @@
+# Extra Assignment
+I added the extra assignment "Fallback Path". 
+This extra assignement is from the Week 5 Pathfinding classes.
+The extra assignment makes it so the agent finds a path that gets itself the closest to the end goal if the end goal is unreachable.
+
+
 # Game AI Programming Project
 
 This repository contains a collection of AI implementations developed as part of the **Game AI Programming** course in the fourth semester at Digital Arts & Entertainment (DAE) of the major Game Development (GD). The project explores the fundamental algorithms used to create the "illusion of intelligence" in games, focusing on movement, pathfinding, and decision-making within a high-performance C++ and Unreal Engine 5 environment.
@@ -39,4 +45,4 @@ The project is organized to maintain a clean separation between engine content a
 This project is part of the **Game AI Programming** curriculum in semester 4 at Howest DAE in the major Game Development (GD). 
 
 ---
-*Note: This repository is currently in development. The final Exam Project implementation is TBD.*
+
